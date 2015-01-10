@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperWrapper", "DapperWrapper\DapperWrapper.csproj", "{0019787A-4C21-47CF-AB77-19C8511621F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DapperWrapper.Tests", "DapperWrapper.Tests\DapperWrapper.Tests.csproj", "{5A4FECE4-79F2-4346-9E48-165770B4DB21}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0019787A-4C21-47CF-AB77-19C8511621F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0019787A-4C21-47CF-AB77-19C8511621F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0019787A-4C21-47CF-AB77-19C8511621F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0019787A-4C21-47CF-AB77-19C8511621F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A4FECE4-79F2-4346-9E48-165770B4DB21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A4FECE4-79F2-4346-9E48-165770B4DB21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A4FECE4-79F2-4346-9E48-165770B4DB21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A4FECE4-79F2-4346-9E48-165770B4DB21}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

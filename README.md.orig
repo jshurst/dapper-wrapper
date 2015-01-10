@@ -1,0 +1,136 @@
+# Introduction
+
+This is my take on the repository and unit of work pattern.  At first I was trying to be data access agnostic as possible, however this was fairly counter productive in its application, so I decided just to focus on Dapper.  Ideally you would be able to simply change the underlying implementation in 1 place (like an IOC container) and your entire underlying data storage would be changed.  The problem with this (well, there are multiple problems) is that you lose some of the power of the underlying data access, like using Linq with the Entity Framwork, but you just have to make the call if you want to make use of this pattern.
+
+Let's take a look at how you can use it.
+
+## Types of Repositories
+
+There are 2 types of repositories that you can use.
+
+*	Common/Base/CRUD Repositories 
+*	Registered Repositories
+
+
+<<<<<<< HEAD
+```
+=======
+``` 
+>>>>>>> bitbucket/master
+	using (IUnitOfWork unitOfWork = new DapperUnitOfWork("myConnectionString"))  
+	{  
+		//If you need a transaction (you can also use the ManageTransaction method)
+		unitOfWork.BeginTransaction();
+
+		//Common  
+		IRepository<Person> commonRepo = unitOfWork.GetRepositoryForEntity<Person>();  
+	
+		//Registered  
+		IPersonRepository registredRepo = unitOfWork.GetRegisteredRepository<IPersonRepository>();  
+		
+		//Again...only if you need a transaction		
+		unitOfWork.Commit();
+	}  
+```
+
+I am wrapping this in a using statment so that the unit of work will be disposed (connection closed, open transactions rolled back, etc).  Using transactions is optional, just putting them here to show you that it's possible.
+
+## Common/Base/CRUD Repositories
+
+Common (or base) repositories are repositories that act on a single model and share the same functionality (CRUD operations).  Many people use this pattern with the Entity Framework (Repository< T >).  With our Dapper implemenation we're using DapperExtensions (however we will be able to override these as well - shown later).
+
+```
+	IRepository<Person> repo = unitOfWork.GetRepositoryForEntity<Person>();
+	repo.Insert(new Person() {LastName = "Wayne"});
+```
+
+### GetList() method
+
+Most of the methods on the Common Repository interface are self-explanatory, however I feel this is worth calling out specifically.  This repo does not expose IQueryable mainly because I can't implement this fully with my chosen data access methods ("can't" = don't want to spend the time implement IQueryable).  So, in order to gain a little flexibility I'm providing a GetList method.  This only works on a single entity (for our Dapper example).  You can pass over an anonymous object to create an "AND" filter, or you can use the DapperExtensions IPredicate.
+
+```
+	IRepository<Person> repo = unitOfWork.GetRepositoryForEntity<Person>();
+	var result = repo.GetList(new {FirstName = "Bruce", LastName = "Wayne"});
+```
+
+## Registered Repositories
+
+Registered repositories are specialized implementations that are outside of normal CRUD operations.  For example maybe you have an Aggregate repository for Person and Addresses.  This isn't a great example, because Address would probably simply be a property on the Person class, which is possible too, but hopefully you'll get the point.
+
+```
+	IPersonRepository repo = unitOfWork.GetRegisteredRepository<IPersonRepository>();  
+	repo.DeleteAllAddressesAndPeople(); //Notice that this is not just a CRUD method but is defined on your IPersonRepository interface
+```
+
+And you're actual repository's method might look like this.
+
+```
+	 public void DeleteAllAddressesAndPeople()  
+        {  
+            const string SQL = "DELETE Address;  DELETE Person;";  
+            UnitOfWork.GetOpenConnection();  
+            UnitOfWork.DbConnection.Execute(SQL, UnitOfWork.DbTransaction);  
+        }  
+```
+
+As the name implies, you must register these repositories first.  I usually do this in the constructor for the Unit Of Work.
+
+```
+	var uow = new DapperUnitOfWork("myConnectionString", Registrations.Instance.Repositories);
+```
+
+In the example below I'm using a singleton for registrations.  It looks like this (feel free to do this however you want).
+
+```
+	public class Registrations
+    {  
+        private static readonly Registrations _instance = new Registrations();  
+        public static Registrations Instance { get { return _instance; } }  
+
+        public Dictionary<Type, Type> Repositories;  
+
+        private Registrations()  
+        {  
+            Repositories = new Dictionary<Type, Type>  
+                {  
+                    { typeof(IPersonRepository), typeof(PersonRepository) }  
+						//Additional registrations, or maybe use an IOC  
+                };  
+        }  
+    }  
+```
+
+In addition if you really wanted to you could also register an instance of IRepository<Entity> and override CRUD methods.
+
+```
+ private static IDictionary<Type, Type> GetRegistrations()
+        {
+            return new Dictionary<Type, Type>
+                {
+                    { typeof(IRepository<Person>), typeof(PersonEntityRepository) }
+                };
+        }
+```
+
+Then you can resolve and use it like this:
+
+```
+ using (IUnitOfWork uow = new DapperUnitOfWork(ConnectionStrings.DapperWrapperConnection, _registrations))
+            {
+                IRepository<Person> personRepo = uow.GetRegisteredRepository<IRepository<Person>>();
+
+                //Beginning a Tx will open a connection, so doing this as late as possible
+                //Once we open the connection all repo interaction can share it
+                uow.ManageTransaction(() =>
+                {
+                    _personToInsert.Addresses = new List<Address> { _addressToInsert };
+                    personRepo.Create(_personToInsert);
+                });
+
+                _foundPerson = personRepo.GetById(_personToInsert.Id);
+                _foundAddress = _foundPerson.Addresses.Single(x => x.PersonId == _foundPerson.Id);
+            } //Dispose closes the connection
+
+```
+
+For more information I suggest you check out the Unit tests...and upcoming wiki.
